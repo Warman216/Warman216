@@ -3,63 +3,77 @@ name: Build APK
 on:
   push:
     branches:
-      - main  # Trigger action on push to the main branch
+      - main
   pull_request:
     branches:
-      - main  # Trigger action on pull requests targeting the main branch
+      - main
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Use the latest Ubuntu environment
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3  # Checkout the code in the repository
+        uses: actions/checkout@v3
 
       - name: Set up Python 3.x
         uses: actions/setup-python@v4
         with:
-          python-version: 3.8  # Specify Python version (adjust as needed)
+          python-version: 3.8
 
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-pip python3-setuptools python3-dev build-essential
           sudo apt-get install -y unzip zip
-          sudo apt-get install -y openjdk-8-jdk  # Required for Buildozer
+          sudo apt-get install -y openjdk-8-jdk
           sudo apt-get install -y libffi-dev libssl-dev
-
+         
+         - name: Setup Android SDK
+     uses: Swisyn/setup-android-sdk@v1
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
-          pip install cython buildozer  # Install Buildozer and dependencies
+          pip install cython buildozer
+
+      - name: Debug environment
+        run: |
+          echo $PATH
+          which python3
+          python3 --version
+          which pip
+          pip --version
+          which buildozer
+          buildozer --version || true
 
       - name: Set up Android SDK and NDK
         run: |
-          # Install Android NDK and SDK
           wget https://dl.google.com/android/repository/android-ndk-r19b-linux-x86_64.zip
           unzip android-ndk-r19b-linux-x86_64.zip
           export ANDROID_NDK_HOME=$PWD/android-ndk-r19b
           export PATH=$ANDROID_NDK_HOME:$PATH
-          
-          # Install SDK tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
           unzip commandlinetools-linux-8512546_latest.zip
           mkdir -p $HOME/.android
           mv cmdline-tools $HOME/.android/
           yes | $HOME/.android/cmdline-tools/bin/sdkmanager --sdk_root=$HOME/.android/cmdline-tools --install "platforms;android-29" "build-tools;29.0.3" "tools"
+          ls -l $HOME/.android/cmdline-tools
 
       - name: Set up Buildozer configuration
         run: |
           cp buildozer.yml $GITHUB_WORKSPACE/
 
-      - name: Build APK with Buildozer
+      - name: Build APK with Buildozer (verbose)
         run: |
           cd $GITHUB_WORKSPACE
-          buildozer android debug  # Build the APK (you can use 'release' for production)
+          buildozer -v android debug
+
+      - name: List APK output
+        run: |
+          ls -la bin/
 
       - name: Upload APK as artifact
-        uses: actions/upload-artifact@v3  # Updated to the latest v3.0.0 version
+        uses: actions/upload-artifact@v3
         with:
           name: apk-file
-          path: bin/*.apk  # Specify the path to the APK file
+          path: bin/*.apk

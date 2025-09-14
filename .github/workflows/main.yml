@@ -59,7 +59,7 @@ jobs:
           buildozer android debug  # Build the APK (you can use 'release' for production)
 
       - name: Upload APK as artifact
-        uses: actions/upload-artifact@v2  # Updated to the latest stable v2 release
+        uses: actions/upload-artifact@v3  # Updated to the latest v3.0.0 version
         with:
           name: apk-file
           path: bin/*.apk  # Specify the path to the APK file
